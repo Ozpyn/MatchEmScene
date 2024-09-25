@@ -27,23 +27,31 @@ class GameSceneViewController: UIViewController {
         }
     }
     
-    var time = 24.0 {
+    var time = 12.0 {
         didSet {
             self.infoLabel.text = labelText(self.time, self.score, self.recCount)
         }
     }
     
-    var labelText: (Double, Int, Int) -> String = { time, score, count in
-        return "Time: \(Int(time)) - Score: \(score) - Total Count: \(count)"
+    var labelText: (Double, Int, Int) -> String = { time, score, recCount in
+        return "Time: \(Int(time)) - Score: \(score) - Total Count: \(recCount)"
+    }
+    
+    var scoreLabel: (Int) -> String = { score in
+        return "Final Score: \(score)"
     }
     
     let startButton = UIButton(type: .system)
+    let restartButton = UIButton(type: .system)
+    let endScoreLabel = UILabel()
     
     override func viewDidLoad() {
         super.viewDidLoad()
         self.infoLabel.text = labelText(self.time, self.score, self.recCount)
         
+        setupRestartButton()
         setupStartButton()
+        setupEndScore()
     }
     
     func setupStartButton() {
@@ -54,10 +62,42 @@ class GameSceneViewController: UIViewController {
         self.view.addSubview(startButton)
     }
     
+    func setupEndScore() {
+        endScoreLabel.frame = CGRect(x: (self.view.frame.width - 400) / 2, y: (self.view.frame.height - 100) / 3, width: 400, height: 100)
+        endScoreLabel.font = UIFont.systemFont(ofSize: 40)
+        endScoreLabel.textAlignment = .center
+        endScoreLabel.text = scoreLabel(score)
+        endScoreLabel.isHidden = true
+        self.view.addSubview(endScoreLabel)
+    }
+    
     @objc func startGame() {
         startButton.isHidden = true // Hide start button
         infoLabel.isHidden = false
         countdown(from: 3)
+    }
+    
+    func setupRestartButton() {
+        restartButton.setTitle("Restart?", for: .normal)
+        restartButton.titleLabel?.font = UIFont.systemFont(ofSize: 24)
+        restartButton.frame = CGRect(x: (self.view.frame.width - 200) / 2, y: (self.view.frame.height - 50) / 2, width: 200, height: 50)
+        restartButton.addTarget(self, action: #selector(restartGame), for: .touchUpInside)
+        restartButton.isHidden = true
+        self.view.addSubview(restartButton)
+    }
+    
+    @objc func restartGame() {
+        endScoreLabel.isHidden = true
+        
+        // Reset scores and counts
+        self.score = 0
+        self.recCount = 0
+        self.time = 12.0
+        
+        infoLabel.text = labelText(self.time, self.score, self.recCount)
+        
+        restartButton.isHidden = true
+        startGame()
     }
     
     func countdown(from seconds: Int) {
@@ -97,9 +137,19 @@ class GameSceneViewController: UIViewController {
     }
     
     func endGame() {
-        // Handle end of game logic here (e.g., show final score)
-        infoLabel.text = "Game Over! Final Score: \(score)"
-        // Optionally show a restart button
+        // Clear existing buttons and pairs
+        for button in btns {
+            button.removeFromSuperview()
+        }
+        btns.removeAll()
+        buttonPairs.removeAll()
+        
+        infoLabel.isHidden = true
+        
+        endScoreLabel.text = scoreLabel(score)
+        endScoreLabel.isHidden = false
+
+        restartButton.isHidden = false
     }
     
     func createRandomRectangleSet() {
@@ -146,13 +196,13 @@ class GameSceneViewController: UIViewController {
         if firstButton == nil {
             // First button tapped
             firstButton = sender
-            sender.transform = CGAffineTransform(scaleX: 1.1, y: 1.1) // Slightly enlarge
+            sender.transform = CGAffineTransform(scaleX: 1.25, y: 1.25) // Slightly enlarge
         } else {
             // Second button tapped
             if let title = sender.title(for: .normal), let pair = buttonPairs[title] {
-                if sender.transform == CGAffineTransform(scaleX: 1.1, y: 1.1) {
+                if sender.transform != CGAffineTransform(scaleX: 1, y: 1) {
                     // If the second button is already highlighted, unhighlight it
-                    sender.transform = .identity // Reset scale
+//                    sender.transform = .identity // Reset scale
                     firstButton?.transform = .identity // Reset scale
                     firstButton = nil // Reset
                 } else if pair.contains(firstButton!) {
@@ -163,6 +213,10 @@ class GameSceneViewController: UIViewController {
                     self.btns.removeAll { $0 == firstButton || $0 == sender }
                     buttonPairs[title] = nil
                     self.score += 1
+                    
+                    if (self.score % 2) == 1{
+                        createRandomRectangleSet() //Difficult
+                    }
                 } else {
                     // No match
                     firstButton?.transform = .identity // Reset scale
