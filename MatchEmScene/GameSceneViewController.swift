@@ -180,6 +180,8 @@ class GameSceneViewController: UIViewController {
             
             rectBtn.layer.cornerRadius = cornerRadius
             rectBtn.clipsToBounds = true
+            rectBtn.layer.borderColor = nil
+            rectBtn.layer.borderWidth = 2
             
             self.btns.append(rectBtn)
             self.view.addSubview(rectBtn)
@@ -197,14 +199,31 @@ class GameSceneViewController: UIViewController {
             // First button tapped
             firstButton = sender
             sender.transform = CGAffineTransform(scaleX: 1.25, y: 1.25) // Slightly enlarge
+            if let fillColor = sender.backgroundColor {
+                // Get the RGBA components of the fill color
+                var red: CGFloat = 0
+                var green: CGFloat = 0
+                var blue: CGFloat = 0
+                var alpha: CGFloat = 0
+                
+                fillColor.getRed(&red, green: &green, blue: &blue, alpha: &alpha)
+
+                // Calculate the inverse color
+                let inverseColor = UIColor(red: 1 - red, green: 1 - green, blue: 1 - blue, alpha: alpha)
+
+                // Set the border color
+                sender.layer.borderColor = inverseColor.cgColor
+            }
         } else {
             // Second button tapped
             if let title = sender.title(for: .normal), let pair = buttonPairs[title] {
-                if sender.transform != CGAffineTransform(scaleX: 1, y: 1) {
-                    // If the second button is already highlighted, unhighlight it
+//                if sender.transform != .identity {
+                if sender.layer.borderColor != nil {
+                    // If the second button is already highlighted, unhighlight first
 //                    sender.transform = .identity // Reset scale
-                    firstButton?.transform = .identity // Reset scale
-                    firstButton = nil // Reset
+                    firstButton?.transform = .identity // Reset Scaale
+                    firstButton?.layer.borderColor = nil // Reset Border
+//                    firstButton = nil // Reset
                 } else if pair.contains(firstButton!) {
                     // Remove buttons with animation
                     animateButtonRemoval(firstButton!)
@@ -220,6 +239,8 @@ class GameSceneViewController: UIViewController {
                 } else {
                     // No match
                     firstButton?.transform = .identity // Reset scale
+                    firstButton?.layer.borderColor = nil // Reset Border
+                    
                 }
             }
             firstButton = nil // Reset for the next pair
